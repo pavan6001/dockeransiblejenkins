@@ -1,50 +1,51 @@
 pipeline{
     agent any
     tools {
-      maven 'maven3'
+  maven 'MAVEN'
     }
     environment {
       DOCKER_TAG = getVersion()
     }
+
     stages{
         stage('SCM'){
             steps{
-                git credentialsId: 'github', 
-                    url: 'https://github.com/javahometech/dockeransiblejenkins'
+                git 'https://github.com/pavan6001/dockeransiblejenkins.git'
             }
         }
         
         stage('Maven Build'){
             steps{
-                sh "mvn clean package"
+                sh "mvn clean package" 
             }
         }
         
         stage('Docker Build'){
             steps{
-                sh "docker build . -t kammana/hariapp:${DOCKER_TAG} "
+                sh "docker build . -t pavan6001/javaapp:${DOCKER_TAG} " 
             }
         }
         
-        stage('DockerHub Push'){
+         stage('DockerHub Push'){
             steps{
-                withCredentials([string(credentialsId: 'docker-hub', variable: 'dockerHubPwd')]) {
-                    sh "docker login -u kammana -p ${dockerHubPwd}"
-                }
-                
-                sh "docker push kammana/hariapp:${DOCKER_TAG} "
+                    withCredentials([string(credentialsId: 'Docker_Hub', variable: 'DockerHubPwd')]) {
+                         sh "docker login -u pavan6001 -p ${DockerHubPwd}"
+                    }
+                sh "docker push pavan6001/javaapp:${DOCKER_TAG} " 
             }
         }
         
         stage('Docker Deploy'){
             steps{
-              ansiblePlaybook credentialsId: 'dev-server', disableHostKeyChecking: true, extras: "-e DOCKER_TAG=${DOCKER_TAG}", installation: 'ansible', inventory: 'dev.inv', playbook: 'deploy-docker.yml'
+                ansiblePlaybook credentialsId: 'Dev-Server',disableHostKeyChecking: true, extras: "-e 'DOCKER_TAG=${DOCKER_TAG}", installation: 'Ansible', inventory: 'dev.inv', playbook: 'deploy-docker.yml'
             }
         }
+        
     }
+
 }
 
 def getVersion(){
-    def commitHash = sh label: '', returnStdout: true, script: 'git rev-parse --short HEAD'
+    def commitHash = sh returnStdout: true, script: 'git rev-parse --short HEAD'
     return commitHash
 }
